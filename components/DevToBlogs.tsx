@@ -26,14 +26,20 @@ interface Article {
 }
 
 const STORAGE_KEY_SAVED = "savedDevToArticles";
-
-// Simple topics plus a sorting approach
 const TOPIC_SUGGESTIONS = ["ai", "databases", "react", "node", "tailwind"];
-
-// Example sort options: "reactions", "newest", "comments"
 const SORT_OPTIONS = ["reactions", "published_at", "comments_count"];
 
-export default function DevToBlogs({ limit = 3, showMore = false }: { limit?: number; showMore?: boolean }) {
+/**
+ * @param limit - How many articles to display
+ * @param showMore - If true, fetch & show more articles 
+ */
+export default function DevToBlogs({
+  limit = 3,
+  showMore = false,
+}: {
+  limit?: number;
+  showMore?: boolean;
+}) {
   const [searchInput, setSearchInput] = useState("");
   const [articles, setArticles] = useState<Article[]>([]);
   const [savedArticles, setSavedArticles] = useState<Article[]>([]);
@@ -43,23 +49,35 @@ export default function DevToBlogs({ limit = 3, showMore = false }: { limit?: nu
   useEffect(() => {
     const storedSaved = localStorage.getItem(STORAGE_KEY_SAVED);
     if (storedSaved) setSavedArticles(JSON.parse(storedSaved));
+
+    // Initial fetch
     fetchArticles("", sortOption);
   }, []);
 
+  // Whenever savedArticles changes, sync to localStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_SAVED, JSON.stringify(savedArticles));
   }, [savedArticles]);
 
-  /** Fetch Articles */
+  /** 
+   * Fetch Dev.to Articles 
+   * If showMore is true => fetch more results
+   */
   const fetchArticles = async (keyword: string, sortParam: string) => {
     try {
-      let url = "https://dev.to/api/articles?per_page=10";
+      const perPage = showMore ? 8 : 6; // e.g. fetch more if it's the full page
+      let url = `https://dev.to/api/articles?per_page=${perPage}`;
+
+      // If a keyword is provided, add "&tag=..."
       if (keyword.trim()) {
         url += `&tag=${keyword.toLowerCase()}`;
       }
+
+      // Fetch
       const res = await axios.get<Article[]>(url);
       let fetched = res.data;
 
+      // Apply client-side sorting
       fetched = [...fetched].sort((a, b) => {
         switch (sortParam) {
           case "reactions":
@@ -122,6 +140,7 @@ export default function DevToBlogs({ limit = 3, showMore = false }: { limit?: nu
   return (
     <div className="bg-gradient-to-r from-indigo-400 to-cyan-400 p-6 rounded-lg shadow-lg text-white">
       <Toaster position="top-right" reverseOrder={false} />
+
       {/* Search Row */}
       <div className="flex gap-2 mb-2">
         <input
@@ -165,10 +184,13 @@ export default function DevToBlogs({ limit = 3, showMore = false }: { limit?: nu
 
         {/* Sort Dropdown */}
         <div className="flex items-center gap-2">
-          <label className="text-sm mr-2 opacity-80">Sort by:</label>
+          <label className="text-gray-100 text-sm">Sort by:</label>
           <select
             value={sortOption}
-            onChange={(e) => setSortOption(e.target.value)}
+            onChange={(e) => {
+              setSortOption(e.target.value);
+              fetchArticles(searchInput, e.target.value);
+            }}
             className="px-2 py-1 text-sm rounded-md border border-white/20 bg-white/10 text-white"
           >
             <option value="reactions">Reactions</option>
@@ -180,9 +202,9 @@ export default function DevToBlogs({ limit = 3, showMore = false }: { limit?: nu
 
       {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
 
-      {/* Articles List */}
+      {/* Articles List (Apply limit) */}
       <ul className="space-y-3">
-        {articles.map((article) => (
+        {articles.slice(0, limit).map((article) => (
           <li key={article.id} className="bg-white rounded-md shadow-sm p-4">
             <div className="flex gap-3">
               {/* Thumbnail */}
@@ -262,23 +284,17 @@ export default function DevToBlogs({ limit = 3, showMore = false }: { limit?: nu
 
       {/* Saved Articles */}
       {savedArticles.length > 0 && (
-      <div className="rounded-md gap-4 shadow-sm p-4">
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-4">
-        <h2 className="text-xl font-bold">
-          Saved Articles
-        </h2>
-      </div>
-
-      <div className="flex justify-between items-center mb-2">
-              {/* Clear All Button */}
-              <button
-                onClick={clearAllSavedArticles}
-                className="text-red-500 text-xs hover:underline"
-              >
-                Clear All
-              </button>
-            </div>
+        <div className="mt-6 p-4 bg-white rounded-md shadow-sm">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xl font-bold text-gray-900">Saved Articles</h2>
+            <button
+              onClick={clearAllSavedArticles}
+              className="text-red-500 text-xs hover:underline"
+            >
+              Clear All
+            </button>
+          </div>
 
           {/* List of Saved Articles */}
           <ul className="space-y-2">
@@ -350,6 +366,14 @@ export default function DevToBlogs({ limit = 3, showMore = false }: { limit?: nu
           </ul>
         </div>
       )}
+
+      {/* 
+        If you want a "See More" button like GitHubStats, 
+        you can add:
+          {!showMore && (
+            <Link href="/devto" ...>See More →</Link>
+          )}
+      */}
     </div>
   );
 }

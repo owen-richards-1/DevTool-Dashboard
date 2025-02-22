@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { JSX, useState } from "react";
 import { motion } from "framer-motion";
 import { FaGithub, FaStackOverflow, FaSearch, FaRocket } from "react-icons/fa";
 import Link from "next/link";
@@ -89,7 +89,7 @@ export default function Home() {
       <footer className="text-center text-gray-400 py-6 bg-gray-900">
         <p>
           Built with ❤️ for developers. Open source on{" "}
-          <a href="https://github.com/yourrepo" className="text-blue-400 hover:underline">
+          <a href="https://github.com/owen-richards-1/DevTool-Dashboard" className="text-blue-400 hover:underline">
             GitHub
           </a>.
         </p>

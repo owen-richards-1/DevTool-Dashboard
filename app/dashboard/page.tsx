@@ -12,7 +12,7 @@ export default function Dashboard() {
 
         {/* Page Title */}
         <h1 className="text-4xl font-bold text-center text-gray-900 dark:text-gray-100 mb-6">
-          Developer Dashboard
+          DevTool Dashboard 🚀
         </h1>
         <p className="text-center text-gray-600 dark:text-gray-400 mb-8">
           Get insights into trending repositories, Stack Overflow discussions, and Dev.to articles.
