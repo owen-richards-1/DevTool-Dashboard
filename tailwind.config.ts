@@ -7,10 +7,13 @@ export default {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
+    fontFamily: {
+      // Custom font "PT Sans" as the default sans-serif font
+      sans: ['"PT Sans"', 'sans-serif'],
+    },
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        // You can add custom colors here
       },
     },
   },

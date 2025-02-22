@@ -1,101 +1,125 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { FaGithub, FaStackOverflow, FaSearch, FaRocket } from "react-icons/fa";
+import Link from "next/link";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [tagInput, setTagInput] = useState("");
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  return (
+    <main className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white">
+      {/* 🌟 Hero Section */}
+      <section className="flex flex-col items-center justify-center text-center px-6 py-20">
+        <motion.h1
+          className="text-4xl md:text-6xl font-extrabold tracking-tight text-white"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          DevTool Dashboard 🚀
+        </motion.h1>
+        <p className="text-lg md:text-xl text-gray-300 mt-4 max-w-2xl">
+          Your one-stop hub for **GitHub activity**, **Stack Overflow trends**, and **Dev.to insights**.
+        </p>
+
+        {/* ✅ Go to Dashboard Button */}
+        <Link
+          href="/dashboard"
+          className="mt-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg shadow-lg transition flex items-center gap-2"
+        >
+          <FaRocket /> Go to Dashboard
+        </Link>
+      </section>
+
+      {/* 🔥 Key Features */}
+      <section className="px-6 py-16 bg-gray-800">
+        <h2 className="text-3xl font-bold text-center mb-8">Why Developers Love This? 💡</h2>
+        <div className="grid md:grid-cols-3 gap-8 text-center">
+          <FeatureCard icon={<FaStackOverflow size={40} />} title="Trending Stack Overflow" description="See what's hot in the developer community." />
+          <FeatureCard icon={<FaGithub size={40} />} title="GitHub Insights" description="Monitor repositories and track open-source activity." />
+          <FeatureCard icon={<FaSearch size={40} />} title="Smart Search" description="Find relevant developer discussions instantly." />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+      </section>
+
+      {/* 🔎 Search Preview */}
+      <section className="px-6 py-16">
+        <h2 className="text-3xl font-bold text-center mb-8">🔎 Try It Now</h2>
+        <p className="text-center text-gray-300 mb-6">Search for a topic to see real-time results.</p>
+        <div className="flex justify-center">
+          <div className="relative w-full max-w-md">
+            <input
+              type="text"
+              placeholder="Search by tag (e.g., reactjs, node.js)"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              className="w-full px-5 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <Link
+              href={`/search?tag=${tagInput}`}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-400 hover:text-blue-500"
+            >
+              <FaSearch size={22} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* 📖 How It Works */}
+      <section className="px-6 py-16 bg-gray-800">
+        <h2 className="text-3xl font-bold text-center mb-8">How It Works 📌</h2>
+        <div className="grid md:grid-cols-3 gap-8 text-center">
+          <StepCard step="1" title="Search a Topic" description="Enter a tag or keyword to find relevant content." />
+          <StepCard step="2" title="Sort & Save" description="Sort results by relevance, stars, or answers." />
+          <StepCard step="3" title="Monitor & Share" description="Save your favorite questions and insights." />
+        </div>
+      </section>
+
+      {/* 🚀 Call to Action */}
+      <section className="px-6 py-16 text-center">
+        <h2 className="text-3xl font-bold mb-4">Start Exploring Now 🚀</h2>
+        <p className="text-gray-300 mb-6">Get started with a single click.</p>
+        <Link href="/dashboard" className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-lg font-semibold">
+          Go to Dashboard
+        </Link>
+      </section>
+
+      {/* 📖 Footer */}
+      <footer className="text-center text-gray-400 py-6 bg-gray-900">
+        <p>
+          Built with ❤️ for developers. Open source on{" "}
+          <a href="https://github.com/yourrepo" className="text-blue-400 hover:underline">
+            GitHub
+          </a>.
+        </p>
       </footer>
-    </div>
+    </main>
+  );
+}
+
+function FeatureCard({ icon, title, description }: { icon: JSX.Element; title: string; description: string }) {
+  return (
+    <motion.div
+      className="p-6 bg-gray-700 rounded-lg shadow-md"
+      whileHover={{ scale: 1.05 }}
+    >
+      <div className="flex justify-center mb-4 text-blue-400">{icon}</div>
+      <h3 className="text-xl font-semibold">{title}</h3>
+      <p className="text-gray-300 mt-2">{description}</p>
+    </motion.div>
+  );
+}
+
+function StepCard({ step, title, description }: { step: string; title: string; description: string }) {
+  return (
+    <motion.div
+      className="p-6 bg-gray-700 rounded-lg shadow-md"
+      whileHover={{ scale: 1.05 }}
+    >
+      <h3 className="text-2xl font-bold text-blue-400 mb-2">Step {step}</h3>
+      <h4 className="text-lg font-semibold">{title}</h4>
+      <p className="text-gray-300 mt-2">{description}</p>
+    </motion.div>
   );
 }
