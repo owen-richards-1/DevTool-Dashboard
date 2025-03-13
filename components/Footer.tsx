@@ -6,15 +6,25 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="w-full bg-gradient-to-r from-indigo-500 to-cyan-500 text-white shadow-lg">
-      <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-        
-        {/* Left Section: Copyright */}
+    <footer className="w-full text-center bg-gradient-to-t from-zinc-700 to-zinc-900">
+      <div className="max-w-6xl mx-auto px-6 py-4 flex flex-col items-center gap-2">
+        {/* Tagline */}
+        <p>
+          Built by developers, for developers. Open source on{" "}
+          <a
+            href="https://github.com/owen-richards-1/DevTool-Dashboard"
+            className="text-blue-400 hover:underline"
+          >
+            GitHub
+          </a>.
+        </p>
+
+        {/* Copyright Section */}
         <p className="text-sm text-accent-dark dark:text-accent-light">
           © {currentYear} Owen Richards. All rights reserved.
         </p>
 
-        {/* Right Section: Social Links */}
+        {/* Social Links Section */}
         <div className="flex items-center gap-4">
           <Link
             href="https://github.com/yourusername"

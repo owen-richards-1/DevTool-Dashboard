@@ -1,252 +1,349 @@
-"use client";
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { auth } from "@/auth";
+import React from "react";
+import Image from "next/image";
 import {
-  FaStar,
-  FaRegStar,
-  FaCodeBranch,
-  FaSpinner,
-  FaSearch,
-  FaTrash,
   FaGithub,
+  FaCodeBranch,
+  FaStar,
+  FaCode,
+  FaCheckCircle,
+  FaCalendarAlt,
+  FaUsers,
 } from "react-icons/fa";
-import { VscGitPullRequest } from "react-icons/vsc";
-import toast, { Toaster } from "react-hot-toast";
 
-interface Repo {
-  id: number;
-  name: string;
-  owner: {
-    login: string;
-    avatar_url: string;
-  };
-  html_url: string;
-  description: string;
-  stargazers_count: number;
-  forks_count: number;
-  pull_requests?: number;
+interface SessionUser {
+  accessToken?: string; // Adjust fields as needed
 }
 
-const STORAGE_KEY = "savedRepos";
-const MAX_REPOS = 8;
-const SUGGESTED_TOPICS = ["react", "node", "python", "machine-learning", "frontend", "typescript"];
-const DEFAULT_SEARCH_QUERY = "stars:>50000";
-
-export default function GitHubStats({ limit = 3, showMore = false }: { limit?: number; showMore?: boolean }) {
-  const [repos, setRepos] = useState<Repo[]>([]);
-  const [savedRepos, setSavedRepos] = useState<Repo[]>([]);
-  const [searchInput, setSearchInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    fetchRepos(DEFAULT_SEARCH_QUERY);
-    loadSavedRepos();
-  }, []);
-
-  const loadSavedRepos = () => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      setSavedRepos(JSON.parse(stored));
-    }
+/** Minimal type definitions for GitHub's GraphQL response. */
+interface GitHubViewer {
+  name: string | null;
+  login: string;
+  avatarUrl: string;
+  followers: {
+    totalCount: number;
   };
-
-  /** Fetch repositories based on search query */
-  const fetchRepos = async (query: string) => {
-    try {
-      const res = await axios.get("https://api.github.com/search/repositories", {
-        params: { q: query, sort: "stars", order: "desc", per_page: showMore ? 8 : 6 },
-      });
-      const enrichedRepos = await Promise.all(
-        res.data.items.map(async (repo: Repo) => {
-          const pullRequests = await fetchPullRequests(repo.owner.login, repo.name);
-          return { ...repo, pull_requests: pullRequests };
-        })
-      );
-      setRepos(enrichedRepos);
-    } catch {
-      toast.error("Failed to fetch repositories.");
-    } finally {
-      setIsLoading(false);
-    }
+  contributionsCollection: {
+    contributionCalendar: {
+      totalContributions: number;
+      weeks: ContributionWeek[];
+    };
   };
-
-  const fetchPullRequests = async (owner: string, repo: string) => {
-    try {
-      const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/pulls`);
-      return response.data.length;
-    } catch {
-      return 0;
-    }
+  repositories: {
+    totalCount: number;
+    nodes: Array<{ stargazerCount: number }>;
   };
+  pullRequests: {
+    totalCount: number;
+  };
+  issues: {
+    totalCount: number;
+  };
+  openPullRequests: {
+    totalCount: number;
+  };
+  openIssues: {
+    totalCount: number;
+  };
+}
 
-  const toggleSaveRepo = (repo: Repo) => {
-    const isSaved = savedRepos.some((r) => r.id === repo.id);
-    if (isSaved) {
-      const updated = savedRepos.filter((r) => r.id !== repo.id);
-      setSavedRepos(updated);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      toast.error(`Removed "${repo.name}" from saved.`);
-    } else {
-      if (savedRepos.length >= MAX_REPOS) {
-        toast.error(`You have reached the limit of ${MAX_REPOS} saved repositories.`);
-        return;
+interface ContributionDay {
+  date: string;
+  contributionCount: number;
+  color: string;
+}
+
+interface ContributionWeek {
+  contributionDays: ContributionDay[];
+}
+
+interface HeatmapProps {
+  weeks: ContributionWeek[];
+  login: string;
+}
+
+const GITHUB_STATS_QUERY = `
+  query {
+    viewer {
+      name
+      login
+      avatarUrl
+      followers {
+        totalCount
       }
-      const updated = [...savedRepos, repo];
-      setSavedRepos(updated);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      toast.success(`Saved "${repo.name}".`);
+      contributionsCollection {
+        contributionCalendar {
+          totalContributions
+          weeks {
+            contributionDays {
+              date
+              contributionCount
+              color
+            }
+          }
+        }
+      }
+      repositories(first: 100, privacy: PUBLIC, isFork: false) {
+        totalCount
+        nodes {
+          stargazerCount
+        }
+      }
+      pullRequests(first: 100, states: MERGED) {
+        totalCount
+      }
+      issues(first: 100, states: CLOSED) {
+        totalCount
+      }
+      openPullRequests: pullRequests(first: 100, states: OPEN) {
+        totalCount
+      }
+      openIssues: issues(first: 100, states: OPEN) {
+        totalCount
+      }
     }
-  };
+  }
+`;
+
+/** 
+ * Single default export 
+ * Main component that fetches data & shows stats 
+ */
+export default async function DetailedGitHubStats() {
+  const session = await auth();
+  if (!session?.user) {
+    return <p className="text-white">Please sign in with GitHub.</p>;
+  }
+
+  // Use the SessionUser interface instead of 'any'
+  const token = (session.user as SessionUser)?.accessToken;
+  if (!token) {
+    return <p className="text-white">No GitHub token found. Please sign in with GitHub.</p>;
+  }
+
+  let data;
+  try {
+    data = await fetchGitHubData(token);
+  } catch (err) {
+    console.error("Error fetching GitHub data:", err);
+    return <p className="text-red-500">Failed to fetch GitHub data.</p>;
+  }
+
+  const viewer: GitHubViewer = data.viewer;
+  const name = viewer.name || viewer.login;
+  const login = viewer.login;
+  const avatarUrl = viewer.avatarUrl;
+
+  const totalCommits = viewer.contributionsCollection.contributionCalendar.totalContributions;
+  const repoCount = viewer.repositories.totalCount;
+  const totalStars = viewer.repositories.nodes.reduce(
+    (acc, repo) => acc + repo.stargazerCount,
+    0
+  );
+  const mergedPRs = viewer.pullRequests.totalCount;
+  const closedIssues = viewer.issues.totalCount;
+  const totalFollowers = viewer.followers.totalCount;
+  const openPRs = viewer.openPullRequests.totalCount;
+  const openIssues = viewer.openIssues.totalCount;
+  const { weeks } = viewer.contributionsCollection.contributionCalendar;
 
   return (
-    <div className="bg-gradient-to-r from-indigo-400 to-cyan-400 p-6 rounded-lg shadow-lg text-white">
-      <Toaster position="top-right" reverseOrder={false} />    
-      {/* Search Bar */}
-        <div className="flex gap-2 mb-3">
-          <input
-            type="text"
-            placeholder="Search repositories..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="w-full px-4 py-2 rounded-md border border-white/20 bg-white/10 text-white placeholder-white/70 focus:ring-2 focus:ring-cyan-300"
+    <div className="p-6 bg-zinc-900 text-white rounded-lg max-w-6xl mx-auto shadow-md">
+      {/* Header: user info */}
+      <div className="flex items-center gap-4 mb-6">
+        {avatarUrl && (
+          <Image
+            src={avatarUrl}
+            alt={`${name} avatar`}
+            width={64}
+            height={64}
+            className="rounded-full border border-gray-700"
           />
-          <button
-            onClick={() => fetchRepos(`topic:${searchInput}`)}
-            className="bg-indigo-600 text-white px-3 py-2 text-sm rounded-md hover:bg-blue-700 transition flex items-center gap-1"
-          >
-            <FaSearch /> Search
-          </button>
-        </div>
-
-        {/* Suggested Tags & Sort */}
-        <div className="flex justify-between items-center mb-3">
-          <div className="flex items-center gap-2">
-            {SUGGESTED_TOPICS.map((topic) => (
-              <button
-                key={topic}
-                onClick={() => fetchRepos(`topic:${topic}`)}
-                className="text-sm text-white bg-white/10 px-2 py-1 rounded-md hover:bg-white/20 transition"
-              >
-                {topic}
-              </button>
-            ))}
-          </div>
-          {/* Sort Dropdown */}
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-sm">Sort by:</span>
-            <select
-              onChange={(e) => fetchRepos(`${searchInput} ${e.target.value}`)}
-              className="bg-white/10 text-white px-2 py-1 rounded-md"
-            >
-              <option value="">Best Match</option>
-              <option value="stars">Most Stars</option>
-              <option value="forks">Most Forks</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Loading Indicator */}
-        {isLoading && (
-            <div className="flex justify-center text-white text-sm mt-3 animate-pulse">
-              <FaSpinner className="animate-spin mr-2" /> Fetching results...
-              </div>
-          )}
-
-        {/* Results for search */}
-        {!isLoading && searchInput && (
-          <h2 className="text-lg font-semibold text-white mt-3">
-          Results for: <span className="text-orange-300">{searchInput}</span>
-        </h2>
-      )}
-
-      {/* Repo List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-        {repos.slice(0, limit).map((repo) => {
-          const isSaved = savedRepos.some((r) => r.id === repo.id);
-
-          return (
-            <div key={repo.id} className="bg-white p-4 rounded-lg shadow-md transition-transform transform hover:scale-105">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <img src={repo.owner.avatar_url} alt={repo.owner.login} className="w-8 h-8 rounded-full" />
-                  <a
-                    href={repo.html_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-lg font-semibold text-gray-900 hover:text-indigo-500 transition"
-                  >
-                    {repo.name}
-                  </a>
-                </div>
-                <button onClick={() => toggleSaveRepo(repo)}>
-                  {isSaved ? (
-                    <FaStar className="text-yellow-500" size={16} />
-                  ) : (
-                    <FaRegStar className="text-yellow-500 hover:text-yellow-600 transition ml-2" size={16} />
-                  )}
-                </button>
-              </div>
-
-              <p className="text-sm text-gray-700 mt-1">{repo.description}</p>
-
-              <div className="flex items-center justify-between mt-3 text-gray-600 text-sm">
-                <span className="flex items-center gap-1"><FaRegStar className="text-yellow-500" /> {repo.stargazers_count}</span>
-                <span className="flex items-center gap-1"><FaCodeBranch className="text-indigo-500" /> {repo.forks_count}</span>
-                {repo.pull_requests !== undefined && (
-                  <span className="flex items-center gap-1"><VscGitPullRequest className="text-green-500" /> {repo.pull_requests}</span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-
-        {/* Get More Repos */}
-        {showMore && (
-          <button
-            onClick={() => fetchRepos(DEFAULT_SEARCH_QUERY)}
-            className="col-span-2 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
-          >
-            Load More Repos
-          </button>
         )}
+        <div>
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <FaGithub /> {name}
+          </h2>
+          <p className="text-zinc-400">{login}</p>
+        </div>
       </div>
 
-      {/* ✅ Saved Repositories */}
-      {savedRepos.length > 0 && (
-        <div className="mt-6 bg-white p-5 rounded-lg shadow-md">
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="text-lg font-semibold text-gray-900">Saved Repositories</h2>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-8">
+        <StatCard
+          icon={<FaCode size={20} />}
+          label="Commits (12 mo.)"
+          value={totalCommits}
+          href={`https://github.com/${login}`}
+        />
+        <StatCard
+          icon={<FaCodeBranch size={20} />}
+          label="Public Repositories"
+          value={repoCount}
+          href={`https://github.com/${login}?tab=repositories`}
+        />
+        <StatCard
+          icon={<FaStar size={20} />}
+          label="Stars"
+          value={totalStars}
+          href={`https://github.com/${login}?tab=stars`}
+        />
+        <StatCard
+          icon={<FaCheckCircle size={20} />}
+          label="Merged PRs"
+          value={mergedPRs}
+          href={`https://github.com/pulls?q=is%3Apr+author%3A${login}+is%3Amerged`}
+        />
+        <StatCard
+          icon={<FaCheckCircle size={20} />}
+          label="Closed Issues"
+          value={closedIssues}
+          href={`https://github.com/issues?q=is%3Aissue+author%3A${login}+is%3Aclosed`}
+        />
+        <StatCard
+          icon={<FaUsers size={20} />}
+          label="Followers"
+          value={totalFollowers}
+          href={`https://github.com/${login}?tab=followers`}
+        />
+      </div>
 
-            {/* Clear All Button */}
-            <button
-              onClick={() => {
-                if (window.confirm("Are you sure you want to remove all saved repositories?")) {
-                  setSavedRepos([]);
-                  localStorage.removeItem(STORAGE_KEY);
-                  toast.error("All saved repositories removed.");
-                }
-              }}
-              className="text-red-600 text-sm hover:text-red-800 transition"
-            >
-              Clear All
-            </button>
-          </div>
-
-          <ul className="space-y-3">
-            {savedRepos.map((repo) => (
-              <li key={repo.id} className="flex justify-between items-center bg-gray-100 p-3 rounded-md">
-                <img src={repo.owner.avatar_url} alt={repo.owner.login} className="w-8 h-8 rounded-full" />
-                <a href={repo.html_url} className="text-gray-900 hover:text-indigo-500 transition">
-                  {repo.name}
-                </a>
-                <button onClick={() => toggleSaveRepo(repo)}>
-                  <FaTrash className="text-red-500 hover:text-red-700 transition" size={16} />
-                </button>
-              </li>
-            ))}
-          </ul>
+      {/* Heatmap & Recent Contributions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-zinc-800 p-4 rounded-lg shadow-md">
+          <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
+            <FaCalendarAlt /> Contribution Heatmap
+          </h3>
+          <ContributionHeatmap weeks={weeks} login={login} />
         </div>
-      )}
+        <RecentContributions
+          login={login}
+          openPRs={openPRs}
+          openIssues={openIssues}
+        />
+      </div>
+    </div>
+  );
+}
+
+/** Helper to fetch data from GitHub GraphQL API */
+async function fetchGitHubData(token: string) {
+  const res = await fetch("https://api.github.com/graphql", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ query: GITHUB_STATS_QUERY }),
+  });
+  if (!res.ok) {
+    throw new Error(`GitHub GraphQL request failed: ${res.status}`);
+  }
+  const json = await res.json();
+  if (json.errors) {
+    throw new Error(JSON.stringify(json.errors));
+  }
+  return json.data;
+}
+
+function StatCard({
+  icon,
+  label,
+  value,
+  href,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  href?: string;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="bg-zinc-800 p-4 rounded-lg flex flex-col items-center text-center hover:bg-zinc-700 transition"
+    >
+      <div className="mb-2">{icon}</div>
+      <p className="text-xl font-bold">{value}</p>
+      <p className="text-sm text-zinc-400">{label}</p>
+    </a>
+  );
+}
+
+export function ContributionHeatmap({ weeks, login }: HeatmapProps) {
+  const reversedWeeks = weeks.slice(-12).reverse();
+
+  return (
+    <div className="overflow-x-auto w-full">
+      <div className="flex gap-0.5">
+        {reversedWeeks.map((week, wIdx) => (
+          <div key={wIdx} className="flex flex-col gap-0.5">
+            {week.contributionDays.map((day, dIdx) => {
+              const link = `https://github.com/${login}?from=${day.date}&to=${day.date}&tab=overview`;
+              return (
+                <a
+                  key={dIdx}
+                  href={link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-6 h-6 rounded-sm border border-zinc-700 hover:opacity-80 group relative"
+                  style={{ backgroundColor: day.color }}
+                >
+                  <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 hidden group-hover:block bg-black text-white text-xs px-2 py-1 rounded shadow-md">
+                    {day.date} - {day.contributionCount} commits
+                  </span>
+                </a>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RecentContributions({
+  login,
+  openPRs,
+  openIssues,
+}: {
+  login: string;
+  openPRs: number;
+  openIssues: number;
+}) {
+  if (openPRs === 0 && openIssues === 0) {
+    return (
+      <div className="bg-zinc-800 p-4 rounded-lg shadow-md flex items-center justify-center">
+        <p className="text-gray-300">
+          No recent contributions. Start a new PR or issue to get involved!
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="bg-zinc-800 p-4 rounded-lg shadow-md">
+      <h3 className="text-lg font-bold mb-3">Recent Contributions</h3>
+      <div className="space-y-4">
+        <a
+          href={`https://github.com/pulls?q=is%3Apr+author%3A${login}+is%3Aopen`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block bg-zinc-700 p-3 rounded hover:bg-zinc-600 transition"
+        >
+          <p className="text-xl font-bold">{openPRs}</p>
+          <p className="text-sm text-gray-400">Open PRs</p>
+        </a>
+        <a
+          href={`https://github.com/issues?q=is%3Aissue+author%3A${login}+is%3Aopen`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block bg-zinc-700 p-3 rounded hover:bg-zinc-600 transition"
+        >
+          <p className="text-xl font-bold">{openIssues}</p>
+          <p className="text-sm text-gray-400">Open Issues</p>
+        </a>
+      </div>
     </div>
   );
 }

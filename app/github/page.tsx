@@ -1,12 +1,12 @@
-import GitHubStats from "@/components/GitHubStats";
+import GitHubStats from "@/components/GitHubRepos";
 import Link from "next/link";
 
 export default function GitHubPage() {
   return (
-    <div className="bg-gray-100 dark:bg-gray-900 min-h-screen">
+    <div className="min-h-screen">
       <main className="p-10 max-w-6xl mx-auto">
         <h1 className="text-4xl font-bold text-center text-gray-900 dark:text-gray-100 mb-4">
-          GitHub Insights
+          GitHub Repos
         </h1>
 
         <p className="text-gray-600 dark:text-gray-400 text-center max-w-2xl mx-auto mb-6">
@@ -14,7 +14,7 @@ export default function GitHubPage() {
         </p>
 
         {/* 🔍 GitHub Stats - Full View */}
-        <GitHubStats showMore={true} limit={12} />
+        <GitHubStats limit={12} />
 
         {/* 🔙 Back to Dashboard */}
         <div className="mt-6 flex justify-center">

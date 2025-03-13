@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export default function StackOverFlowPage() {
     return (
-      <div className="bg-gray-100 dark:bg-gray-900 min-h-screen">
+      <div className="min-h-screen">
         <main className="p-10 max-w-6xl mx-auto">
           <h1 className="text-4xl font-bold text-center text-gray-900 dark:text-gray-100 mb-4">
             StackOverFlow Insights
@@ -14,7 +14,7 @@ export default function StackOverFlowPage() {
           </p>
   
           {/* 🔍 GitHub Stats - Full View */}
-          <StackOverflowTrends showMore={true} limit={12} />
+          <StackOverflowTrends limit={8} />
   
           {/* 🔙 Back to Dashboard */}
           <div className="mt-6 flex justify-center">

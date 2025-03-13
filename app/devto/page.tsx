@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export default function DevToPage() {
     return (
-      <div className="bg-gray-100 dark:bg-gray-900 min-h-screen">
+      <div className=" min-h-screen">
         <main className="p-10 max-w-6xl mx-auto">
           <h1 className="text-4xl font-bold text-center text-gray-900 dark:text-gray-100 mb-4">
             Dev.to Blogs
@@ -13,10 +13,10 @@ export default function DevToPage() {
             Explore trending blogs, developer stories, and software development articles.
           </p>
   
-          {/* 🔍 Dev.to Blogs - Full View */}
-          <DevToBlogs showMore={true} limit={12} />
+          {/*Dev.to Blogs - Full View */}
+          <DevToBlogs limit={8} />
   
-          {/* 🔙 Back to Dashboard */}
+          {/* Back to Dashboard */}
           <div className="mt-6 flex justify-center">
             <Link
               href="/dashboard"
