@@ -2,7 +2,7 @@
 
 import { JSX } from "react";
 import { motion } from "framer-motion";
-import { FaGithub, FaStackOverflow, FaSearch, FaRocket, FaDev } from "react-icons/fa";
+import { FaGithub, FaStackOverflow, FaRocket, FaDev } from "react-icons/fa";
 import { useSession, signIn } from "next-auth/react";
 
 export default function Home() {

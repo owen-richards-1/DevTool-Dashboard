@@ -10,9 +10,9 @@ DevTool Dashboard is a tool aimed for developers to help them build experience i
 
 ## Features
 
-- [ ] User Authentication
-- [ ] User Dashboard
-- [ ] User Profile
+- User Authentication
+- User Dashboard
+- User Profile
 
 ### GitHub stats
 
