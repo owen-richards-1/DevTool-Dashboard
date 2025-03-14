@@ -14,14 +14,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     async jwt({ token, account }) {
       if (account?.access_token) {
-        // Explicitly cast to string
         token.accessToken = account.access_token as string;
       }
       return token;
     },
     async session({ session, token }) {
       if (token?.accessToken) {
-        // Also cast here (or do a typeof check)
         session.user.accessToken = token.accessToken as string;
       }
       return session;

@@ -2,7 +2,7 @@
 
 import { JSX } from "react";
 import { motion } from "framer-motion";
-import { FaGithub, FaStackOverflow, FaSearch, FaRocket } from "react-icons/fa";
+import { FaGithub, FaStackOverflow, FaSearch, FaRocket, FaDev } from "react-icons/fa";
 import { useSession, signIn } from "next-auth/react";
 
 export default function Home() {
@@ -45,9 +45,12 @@ export default function Home() {
       <section className="px-6 py-16 bg-zinc-800">
         <h2 className="text-3xl font-bold text-center mb-8">Why Developers Love This? 💡</h2>
         <div className="grid md:grid-cols-3 gap-8 text-center">
+          {/* Stack Overlow */}
           <FeatureCard icon={<FaStackOverflow size={40} />} title="Trending Stack Overflow" description="See what's hot in the developer community." />
+          {/* GitHub */}
           <FeatureCard icon={<FaGithub size={40} />} title="GitHub Insights" description="Monitor repositories and track open-source activity." />
-          <FeatureCard icon={<FaSearch size={40} />} title="Smart Search" description="Find relevant developer discussions instantly." />
+          {/* Dev.to */}
+          <FeatureCard icon={<FaDev size={40} />} title="Dev.to Articles" description="Find the latest articles on Dev.to with ease." />
         </div>
       </section>
       
